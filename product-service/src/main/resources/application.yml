@@ -1,0 +1,23 @@
+server:
+  port: 8081  # Usaremos 8081 para Productos (8080 lo reservamos para el Gateway después)
+
+spring:
+  application:
+    name: product-service # IMPORTANTE: Con este nombre se buscará en Eureka
+  datasource:
+    url: jdbc:postgresql://localhost:5432/product_db
+    username: admin
+    password: password
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update # Crea las tablas automáticamente (solo para desarrollo)
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true # Para ver las consultas SQL en consola (opcional)
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/

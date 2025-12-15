@@ -1,0 +1,11 @@
+/target
+/.mvn
+/node_modules
+/.angular
+/postgres-data
+.DS_Store
+.vscode
+.idea
+*.class
+*.jar
+*.log

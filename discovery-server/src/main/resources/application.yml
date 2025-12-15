@@ -1,0 +1,15 @@
+server:
+  port: 8761 # Puerto estándar para Eureka
+
+spring:
+  application:
+    name: discovery-server
+
+eureka:
+  client:
+    # Como este ES el servidor, no debe registrarse a sí mismo
+    register-with-eureka: false
+    fetch-registry: false
+  server:
+    # Tiempo de espera para expulsar servicios muertos (útil en desarrollo)
+    wait-time-in-ms-when-sync-empty: 0

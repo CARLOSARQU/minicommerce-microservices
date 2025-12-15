@@ -1,0 +1,84 @@
+services:
+  # ----------------------------
+  # INFRAESTRUCTURA (Bases de datos + RabbitMQ)
+  # ----------------------------
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+      # Creamos las dos bases de datos al inicio
+      - POSTGRES_DB=product_db 
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data # Para no perder datos al apagar
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # Puerto de mensajería
+      - "15672:15672" # Panel visual (usuario: guest / guest)
+
+  # ----------------------------
+  # MICROSERVICIOS
+  # ----------------------------
+  discovery-server:
+    build: ./discovery-server
+    container_name: discovery-server
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  product-service:
+    build: ./product-service
+    container_name: product-service
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      # Sobreescribimos la URL para que apunte al contenedor 'postgres' en vez de 'localhost'
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/product_db
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=password
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - postgres
+      - discovery-server
+      - rabbitmq
+
+  order-service:
+    build: ./order-service
+    container_name: order-service
+    ports:
+      - "8082:8082" # Asegúrate de que order-service use este puerto o cámbialo aquí
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      # OJO: Order Service necesita su propia DB, aquí reutilizamos 'product_db' por simplicidad 
+      # o puedes crear 'order_db' manualmente en postgres después.
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/product_db 
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=password
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+      - SPRING_RABBITMQ_HOST=rabbitmq
+    depends_on:
+      - postgres
+      - discovery-server
+      - rabbitmq
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka/
+    depends_on:
+      - discovery-server
+      - product-service
+      - order-service

@@ -1,0 +1,44 @@
+server:
+  port: 8080 # El puerto estándar de la web
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: false # Permite buscar servicios en Eureka automáticamente
+          lowerCaseServiceId: true
+      routes:
+        # Ruta para Productos
+        - id: product-service
+          uri: lb://PRODUCT-SERVICE # "lb" = Load Balancer (¡Eureka maneja la IP!)
+          predicates:
+            - Path=/api/products,/api/products/**
+          filters:
+            - StripPrefix=1
+            
+        # Ruta para Pedidos
+        - id: order-service
+          uri: lb://ORDER-SERVICE
+          predicates:
+            - Path=/api/orders/**,/api/orders
+          filters:
+            - StripPrefix=1
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:4200" # Permitir Angular
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+            allowedHeaders: "*"
+
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
